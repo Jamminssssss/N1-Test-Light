@@ -1,131 +1,161 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect } from 'react';
+import { View, StyleSheet, SafeAreaView, Platform, useColorScheme } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import ReadingSection from './screens/ReadingSection';
+import ListeningSection from './screens/ListeningSection';
+import SplashScreen from 'react-native-splash-screen';
+import { BannerAd, BannerAdSize, AppOpenAd, AdEventType } from 'react-native-google-mobile-ads';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const Tab = createBottomTabNavigator();
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+// 광고 단위 ID 설정 (iOS와 Android에서 다르게 설정)
+const topBannerAdUnitId = Platform.select({
+  ios: 'ca-app-pub-3940256099942544/2435281174',
+  android: 'ca-app-pub-3940256099942544/6300978111',
+});
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const bottomBannerAdUnitId = Platform.select({
+  ios: 'ca-app-pub-3940256099942544/2435281174',
+  android: 'ca-app-pub-3940256099942544/6300978111',
+});
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
+const appOpenAdUnitId = Platform.select({
+  ios: 'ca-app-pub-3940256099942544/5575463023',
+  android: 'ca-app-pub-3940256099942544/9257395921',
+});
+
+interface BannerProps {
+  adUnitId?: string; // 광고 ID가 없을 경우를 대비하여 선택적 프로퍼티로 설정
 }
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+const TopBanner: React.FC<BannerProps> = ({ adUnitId }) => (
+  <View style={styles.topBannerContainer}>
+    {adUnitId && (
+      <BannerAd
+        unitId={adUnitId}
+        size={BannerAdSize.FULL_BANNER}
+        requestOptions={{
+          requestNonPersonalizedAdsOnly: true,
+        }}
+      />
+    )}
+  </View>
+);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+const BottomBanner: React.FC<BannerProps> = ({ adUnitId }) => (
+  <View style={styles.bottomBannerContainer}>
+    {adUnitId && (
+      <BannerAd
+        unitId={adUnitId}
+        size={BannerAdSize.FULL_BANNER}
+        requestOptions={{
+          requestNonPersonalizedAdsOnly: true,
+        }}
+      />
+    )}
+  </View>
+);
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the reccomendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
+export default function App() {
+  const colorScheme = useColorScheme(); // 다크 모드/라이트 모드 확인
+
+  useEffect(() => {
+    // 스플래시 화면을 3초 후에 숨김
+    const timeout = setTimeout(() => {
+      SplashScreen.hide();
+    }, 3000);
+
+    // 앱 오프닝 광고 로드 및 표시
+    const loadAndShowAppOpenAd = async () => {
+      if (!appOpenAdUnitId) return; // 광고 ID가 없는 경우 실행하지 않음
+
+      const appOpenAd = AppOpenAd.createForAdRequest(appOpenAdUnitId, {
+        requestNonPersonalizedAdsOnly: true,
+      });
+
+      appOpenAd.addAdEventListener(AdEventType.LOADED, () => {
+        console.log('앱 오프닝 광고 로드됨');
+        appOpenAd.show(); // 광고 표시
+      });
+
+      appOpenAd.addAdEventListener(AdEventType.ERROR, (error) => {
+        console.log('앱 오프닝 광고 로드 실패:', error);
+      });
+
+      await appOpenAd.load();
+    };
+
+    loadAndShowAppOpenAd();
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: colorScheme === 'dark' ? 'black' : 'white' }]}>
+      <TopBanner adUnitId={topBannerAdUnitId} />
+      <View style={styles.mainContent}>
+        <NavigationContainer>
+          <Tab.Navigator
+            initialRouteName="Reading"
+            screenOptions={{
+              tabBarStyle: [styles.tabBar, { backgroundColor: colorScheme === 'dark' ? 'black' : 'white' }],
+              headerShown: false,
+            }}
+          >
+            <Tab.Screen
+              name="Reading"
+              component={ReadingSection}
+              options={{
+                tabBarIcon: ({ color }) => (
+                  <Ionicons name="book" color={color} size={24} />
+                ),
+                tabBarLabel: "Reading",
+              }}
+            />
+            <Tab.Screen
+              name="Listening"
+              component={ListeningSection}
+              options={{
+                tabBarIcon: ({ color }) => (
+                  <Ionicons name="headset" color={color} size={24} />
+                ),
+                tabBarLabel: "Listening",
+              }}
+            />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </View>
+      <BottomBanner adUnitId={bottomBannerAdUnitId} />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  mainContent: {
+    flex: 1,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  tabBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 64, // 터치 영역 확보를 위해 높이 증가
+    borderTopWidth: 0,
+    elevation: 0,
+    shadowOpacity: 0,
+    paddingVertical: 0,
   },
-  highlight: {
-    fontWeight: '700',
+  topBannerContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  bottomBannerContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
 });
-
-export default App;

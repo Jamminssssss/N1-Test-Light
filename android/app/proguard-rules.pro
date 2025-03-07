@@ -8,3 +8,14 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+# React Native 기본 설정
+-keep class com.facebook.react.** { *; }
+-keep class com.facebook.hermes.** { *; }
+-keep class com.facebook.proguard.** { *; }
+
+# Serializable 인터페이스 구현 클래스 유지
+-keep class * implements java.io.Serializable { *; }
+
+# 네이티브 라이브러리 예외 처리
+-keep class * extends android.app.Application { *; }
